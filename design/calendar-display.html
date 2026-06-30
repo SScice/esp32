@@ -131,6 +131,7 @@
       display: block;
     }
 
+    /* Footer 640×77: lunar left @ 16px; clock HH:MM（UTC+8） centered on strip (layout_design.h). */
     .bottom-strip {
       height: 77px;
       width: 640px;
@@ -139,7 +140,19 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
       background: linear-gradient(180deg, #ebe6dc 0%, var(--epd-paper) 40%, #e8e3d8 100%);
+    }
+
+    .lunar-display {
+      position: absolute;
+      left: 16px; /* BOTTOM_LUNAR_X */
+      font-family: "Noto Serif SC", serif;
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--epd-black);
+      white-space: nowrap;
     }
 
     .clock-display {
@@ -223,6 +236,7 @@
       </div>
 
       <footer class="bottom-strip">
+        <div class="lunar-display" aria-label="Lunar date">农历二月初九</div>
         <div class="clock-display">
           14:32<span class="tz">（UTC+8）</span>
         </div>

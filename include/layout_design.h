@@ -20,8 +20,21 @@ constexpr int ART_Y = 0;
 constexpr int ART_W = 256;
 constexpr int ART_H = 307;
 
+constexpr int BOTTOM_X = 0;
+constexpr int BOTTOM_W = PANEL_W;
 constexpr int BOTTOM_Y = 307;
 constexpr int BOTTOM_STRIP_BORDER_PX = 2;
+
+// Bottom strip: lunar (left) + clock (center). Parity: design/calendar-display.html footer.
+constexpr int BOTTOM_LUNAR_X = 16;  // left margin; matches calendar panel inset (CAL_X + 8).
+// Clock anchor: horizontal center of full 640px strip (drawClockString uses center x).
+constexpr int BOTTOM_CLOCK_CENTER_X = PANEL_W / 2;
+// Vertical center of strip content; +2 nudges baseline with clock glyph metrics.
+constexpr int BOTTOM_CLOCK_CENTER_Y = BOTTOM_Y + BOTTOM_H / 2 + 2;
+
+// snprintf buffer for bottom strip strings: lunar line + clock line (formatClockLine).
+// Lunar UTF-8 can be ~24–36 bytes; clock "HH:MM（UTC+8）" ≈ 22 bytes — use ≥48, prefer 64.
+constexpr int BOTTOM_STRIP_LINE_BUF = 64;
 
 // design/:root --epd-paper / --epd-black / --epd-red
 constexpr uint8_t COLOR_PAPER = 1;   // white / paper
