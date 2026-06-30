@@ -20,8 +20,6 @@ constexpr int ART_Y = 0;
 constexpr int ART_W = 256;
 constexpr int ART_H = 307;
 
-constexpr int BOTTOM_X = 0;
-constexpr int BOTTOM_W = PANEL_W;
 constexpr int BOTTOM_Y = 307;
 constexpr int BOTTOM_STRIP_BORDER_PX = 2;
 

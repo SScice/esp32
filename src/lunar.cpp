@@ -17,6 +17,13 @@ struct LunarEntry {
 
 #include "lunar_data.inc"
 
+struct LunarDay {
+    int lunar_year;
+    int lunar_month;
+    int lunar_day;
+    bool is_leap_month;
+};
+
 static const char kMonthNames[][9] = {
     u8"正月",
     u8"二月",
@@ -35,10 +42,8 @@ static const char kMonthNames[][9] = {
 static const char kDigit[] = u8"一二三四五六七八九十";
 
 static void appendUtf8(char* buf, size_t n, const char* s) {
-    if (n == 0) return;
-    size_t used = strlen(buf);
-    if (used >= n - 1) return;
-    strncat(buf, s, n - 1 - used);
+    if (!buf || n == 0 || !s) return;
+    snprintf(buf + strlen(buf), n - strlen(buf), "%s", s);
 }
 
 static bool lookupSolar(int y, int m, int d, LunarDay* out) {
@@ -71,7 +76,7 @@ static bool lookupSolar(int y, int m, int d, LunarDay* out) {
     return false;
 }
 
-bool lunar_day_from_tm(const struct tm* tm, LunarDay* out) {
+static bool lunarFromTm(const struct tm* tm, LunarDay* out) {
     if (!tm || !out) return false;
     const int y = tm->tm_year + 1900;
     const int m = tm->tm_mon + 1;
@@ -119,7 +124,7 @@ void formatLunarLine(char* buf, size_t n, const struct tm* tm) {
     if (!tm) return;
 
     LunarDay ld;
-    if (!lunar_day_from_tm(tm, &ld)) return;
+    if (!lunarFromTm(tm, &ld)) return;
 
     if (ld.is_leap_month) appendUtf8(buf, n, u8"闰");
 

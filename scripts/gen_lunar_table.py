@@ -18,10 +18,6 @@ while d <= END:
     rows.append((d.year, d.month, d.day, z.lunar_year, z.lunar_month, z.lunar_day, leap))
     d += timedelta(days=1)
 
-for test in [(2020, 1, 25), (2024, 2, 10), (2025, 1, 29), (2023, 3, 22)]:
-    z = ZhDate(*test)
-    print(test, "->", z.lunar_year, z.lunar_month, z.lunar_day, "leap", z.leap_month)
-
 print("days", len(rows))
 
 out_path = "src/lunar_data.inc"
