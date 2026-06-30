@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>刷新策略 · 7.5″ 墨水屏日历</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --paper: #f4f1ea;
+      --ink: #1a1a1a;
+      --ink-muted: #5c5c5c;
+      --accent: #b33a3a;
+      --panel: #e8e4db;
+      --border-ink: #2d2d2d;
+    }
+    .device-shadow {
+      box-shadow:
+        0 1px 0 rgba(0, 0, 0, 0.08),
+        0 12px 40px rgba(0, 0, 0, 0.12),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+    }
+    .eink-grain {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    }
+    .device-frame {
+      width: min(100%, 640px);
+      aspect-ratio: 640 / 384;
+    }
+    .clock-strip {
+      aspect-ratio: 640 / 77;
+    }
+    .tab-btn {
+      padding: 0.625rem 1rem;
+      border-radius: 0.5rem;
+      border: 2px solid #d6d3d1;
+      background: rgba(255, 255, 255, 0.6);
+      color: var(--ink-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .tab-btn.tab-active {
+      border-color: var(--ink);
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .pulse-ring {
+      animation: pulse-ring 2s ease-out infinite;
+    }
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(179, 58, 58, 0.45); }
+      70% { box-shadow: 0 0 0 12px rgba(179, 58, 58, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(179, 58, 58, 0); }
+    }
+    .mode-badge {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      padding: 0.125rem 0.5rem;
+      border-radius: 0.25rem;
+      background: var(--ink);
+      color: var(--paper);
+      font-size: 10px;
+      font-family: ui-monospace, monospace;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body class="min-h-screen bg-stone-200 text-[color:var(--ink)] font-sans antialiased">
+  <div class="eink-grain min-h-screen">
+    <header class="border-b border-stone-300/80 bg-[color:var(--paper)]/90 backdrop-blur-sm sticky top-0 z-20">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+        <a href="index.html" class="text-sm text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition flex items-center gap-1.5">
+          <span aria-hidden="true">←</span> 返回设计索引
+        </a>
+        <div class="text-right">
+          <p class="text-xs uppercase tracking-widest text-[color:var(--ink-muted)]">PRD · 刷新策略</p>
+          <h1 class="text-lg sm:text-xl font-semibold" style="font-family: Georgia, 'Songti SC', serif">全屏 vs 局部刷新</h1>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-10">
+      <section class="bg-[color:var(--paper)] rounded-2xl border border-stone-300/60 p-6 sm:p-8 device-shadow">
+        <p class="text-[color:var(--ink-muted)] text-sm sm:text-base leading-relaxed max-w-3xl">
+          设备分辨率为 <strong class="text-[color:var(--ink)] font-mono">640×384</strong>。当<strong>日历日期</strong>变化时执行<strong>全屏刷新</strong>（日历 + 自定义图 + 时钟）；当仅<strong>分钟</strong>变化时执行<strong>局部刷新</strong>，只更新底部 <strong class="font-mono">640×77</strong> 时钟条，以降低闪烁与功耗。
+        </p>
+        <dl class="mt-6 grid sm:grid-cols-2 gap-4 text-sm">
+          <div class="rounded-xl bg-[color:var(--panel)]/80 border border-stone-300/50 p-4">
+            <dt class="font-semibold text-[color:var(--accent)]">触发：日期变化</dt>
+            <dd class="mt-1 text-[color:var(--ink-muted)]">跨日、月视图重绘、首次完整布局 → 整屏 epd 刷新</dd>
+          </div>
+          <div class="rounded-xl bg-[color:var(--panel)]/80 border border-stone-300/50 p-4">
+            <dt class="font-semibold text-[color:var(--ink)]">触发：分钟变化</dt>
+            <dd class="mt-1 text-[color:var(--ink-muted)]">仅重绘底部时钟区，上半屏日历与右侧三色图保持不变</dd>
+          </div>
+        </dl>
+      </section>
+
+      <div>
+        <div class="flex flex-wrap gap-2 mb-6" role="tablist" aria-label="刷新模式">
+          <button type="button" id="tab-full" role="tab" aria-selected="true" aria-controls="panel-modes"
+            class="tab-btn tab-active">全屏刷新</button>
+          <button type="button" id="tab-partial" role="tab" aria-selected="false" aria-controls="panel-modes"
+            class="tab-btn">局部刷新（时钟区）</button>
+        </div>
+
+        <div id="panel-modes" role="tabpanel">
+          <div class="flex flex-col lg:flex-row gap-8 items-start">
+            <div class="w-full flex justify-center">
+              <div id="device-frame" class="device-frame device-shadow rounded-lg overflow-hidden border-2 border-[color:var(--border-ink)] bg-[color:var(--paper)] relative">
+                <div class="top-static flex h-[79.95%] border-b-2 border-[color:var(--border-ink)]">
+                  <div class="w-[60%] border-r-2 border-[color:var(--border-ink)] p-2 sm:p-3 flex flex-col bg-[color:var(--paper)]">
+                    <div class="flex justify-between items-baseline text-[10px] sm:text-xs text-[color:var(--ink-muted)] mb-1">
+                      <span class="font-semibold text-[color:var(--ink)]" style="font-family: Georgia, serif">六月 2026</span>
+                      <span id="top-hint" class="hidden text-[9px] bg-stone-300/80 px-1 rounded">静态 · 不刷新</span>
+                      <span id="top-utc" class="text-[color:var(--ink-muted)]">UTC+8</span>
+                    </div>
+                    <div class="grid grid-cols-7 gap-px text-[8px] sm:text-[10px] text-center text-[color:var(--ink-muted)] font-mono flex-1" id="cal-grid">
+                      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+                      <span class="opacity-40">1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
+                      <span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span>
+                      <span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span>
+                      <span>22</span><span>23</span><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span>
+                      <span>29</span><span class="bg-[color:var(--ink)] text-[color:var(--paper)] rounded-sm font-bold">30</span><span class="opacity-40">1</span><span class="opacity-40">2</span><span class="opacity-40">3</span><span class="opacity-40">4</span><span class="opacity-40">5</span>
+                    </div>
+                  </div>
+                  <div class="w-[40%] bg-[color:var(--panel)] relative overflow-hidden flex items-center justify-center" id="art-panel">
+                    <div id="art-full" class="absolute inset-2 border border-dashed border-[color:var(--accent)]/50 rounded flex items-center justify-center">
+                      <div class="text-center px-2">
+                        <div class="w-12 h-12 mx-auto mb-1 rounded-full bg-[color:var(--accent)]/20 border border-[color:var(--accent)]"></div>
+                        <p class="text-[9px] sm:text-[10px] text-[color:var(--ink-muted)]">自定义三色图</p>
+                        <p class="text-[8px] text-[color:var(--accent)] font-mono">256×307</p>
+                      </div>
+                    </div>
+                    <p id="art-static" class="hidden text-[9px] text-[color:var(--ink-muted)]">静态 · 不刷新</p>
+                  </div>
+                </div>
+                <div id="clock-zone" class="clock-zone h-[20.05%] flex items-center justify-center bg-[color:var(--paper)] relative">
+                  <p id="clock-time" class="text-2xl sm:text-4xl tracking-wide text-[color:var(--ink)]" style="font-family: Georgia, serif">14:32</p>
+                  <span id="partial-label" class="hidden absolute bottom-1 right-2 text-[9px] text-[color:var(--accent)] font-mono">PARTIAL</span>
+                </div>
+                <div id="mode-badge" class="mode-badge">FULL</div>
+              </div>
+            </div>
+            <div class="lg:max-w-xs text-sm text-[color:var(--ink-muted)] space-y-3">
+              <h2 id="aside-title" class="text-[color:var(--ink)] font-semibold text-base">全屏刷新示意</h2>
+              <p id="aside-body">日期从 29 → 30 时，月历高亮、整屏黑白红通道一并更新，包含右侧装饰图与底部时钟。</p>
+              <ul id="aside-list" class="list-disc pl-5 space-y-1">
+                <li>区域：384×307 日历 + 256×307 图 + 640×77 时钟</li>
+                <li>建议每日至少一次全刷，减轻残影</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section class="bg-[color:var(--paper)] rounded-2xl border border-stone-300/60 p-6 sm:p-8 device-shadow">
+        <h2 class="text-lg font-semibold mb-2" style="font-family: Georgia, serif">底部时钟条 · 局部刷新单元</h2>
+        <p class="text-sm text-[color:var(--ink-muted)] mb-6 max-w-2xl">
+          固件将时钟区域映射为独立缓冲，分钟 tick 时只提交该条带的位图差分；全屏刷新时该条带作为整帧的一部分一并写入。
+        </p>
+        <div class="flex flex-col sm:flex-row gap-6 items-center sm:items-stretch">
+          <div class="w-full max-w-xl">
+            <div class="clock-strip w-full device-shadow rounded-md border-2 border-[color:var(--border-ink)] bg-[color:var(--paper)] flex items-center justify-center relative overflow-hidden">
+              <p class="text-3xl sm:text-5xl text-[color:var(--ink)]" style="font-family: Georgia, serif">08:05</p>
+              <div class="absolute left-0 top-0 bottom-0 w-1 bg-[color:var(--accent)]"></div>
+              <span class="absolute top-1 left-3 text-[10px] font-mono text-[color:var(--ink-muted)]">640 × 77 px</span>
+            </div>
+          </div>
+          <div class="flex-1 text-sm space-y-2 text-[color:var(--ink-muted)]">
+            <p><strong class="text-[color:var(--ink)]">局部更新</strong>：仅此时钟条参与 epd 局部刷新序列，典型周期 60s。</p>
+            <p><strong class="text-[color:var(--ink)]">全屏更新</strong>：日期变化时连同日历格与右侧红色层一起完整刷新。</p>
+            <p class="text-xs border-t border-stone-300 pt-3 mt-3">
+              比例参考 README：上区 4/5 高度（日历 3:2 + 图），下区 1/5 为时钟。
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="max-w-5xl mx-auto px-4 sm:px-6 py-8 text-center text-xs text-[color:var(--ink-muted)]">
+      <a href="index.html" class="underline hover:text-[color:var(--ink)]">index.html</a> · 设计文档 mockup · 非生产固件
+    </footer>
+  </div>
+
+  <script>
+    const tabFull = document.getElementById('tab-full');
+    const tabPartial = document.getElementById('tab-partial');
+    const clockZone = document.getElementById('clock-zone');
+    const clockTime = document.getElementById('clock-time');
+    const modeBadge = document.getElementById('mode-badge');
+    const partialLabel = document.getElementById('partial-label');
+    const topHint = document.getElementById('top-hint');
+    const topUtc = document.getElementById('top-utc');
+    const artFull = document.getElementById('art-full');
+    const artStatic = document.getElementById('art-static');
+    const asideTitle = document.getElementById('aside-title');
+    const asideBody = document.getElementById('aside-body');
+    const asideList = document.getElementById('aside-list');
+
+    const copy = {
+      full: {
+        title: '全屏刷新示意',
+        body: '日期从 29 → 30 时，月历高亮、整屏黑白红通道一并更新，包含右侧装饰图与底部时钟。',
+        list: '<li>区域：384×307 日历 + 256×307 图 + 640×77 时钟</li><li>建议每日至少一次全刷，减轻残影</li>',
+      },
+      partial: {
+        title: '局部刷新示意',
+        body: '分钟从 32 → 33 时，驱动仅对<strong class="text-[color:var(--ink)]">底部矩形窗口</strong>做快速局部更新，上半屏像素保持不变。',
+        list: '<li>刷新窗口：<span class="font-mono text-[color:var(--ink)]">640×77</span>（屏高约 1/5）</li><li>内容：花体数字 <span class="font-mono">xx:yy</span>，UTC+8</li>',
+      },
+    };
+
+    function selectTab(partial) {
+      tabFull.classList.toggle('tab-active', !partial);
+      tabPartial.classList.toggle('tab-active', partial);
+      tabFull.setAttribute('aria-selected', partial ? 'false' : 'true');
+      tabPartial.setAttribute('aria-selected', partial ? 'true' : 'false');
+
+      clockZone.classList.toggle('pulse-ring', partial);
+      clockZone.classList.toggle('ring-2', partial);
+      clockZone.classList.toggle('ring-[color:var(--accent)]/60', partial);
+      clockZone.classList.toggle('ring-inset', partial);
+      clockTime.textContent = partial ? '14:33' : '14:32';
+      modeBadge.textContent = partial ? 'PARTIAL' : 'FULL';
+      partialLabel.classList.toggle('hidden', !partial);
+      topHint.classList.toggle('hidden', !partial);
+      topUtc.classList.toggle('hidden', partial);
+      artFull.classList.toggle('hidden', partial);
+      artStatic.classList.toggle('hidden', !partial);
+
+      const c = partial ? copy.partial : copy.full;
+      asideTitle.textContent = c.title;
+      asideBody.innerHTML = c.body;
+      asideList.innerHTML = c.list;
+    }
+
+    tabFull.addEventListener('click', () => selectTab(false));
+    tabPartial.addEventListener('click', () => selectTab(true));
+  </script>
+</body>
+</html>

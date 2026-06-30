@@ -6,3 +6,6 @@ dist
 target
 __pycache__
 .venv
+.pio
+.vscode
+secrets.h
