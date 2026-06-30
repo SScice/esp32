@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>刷新策略 · 7.5″ 墨水屏日历</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            paper: '#f4f1ea',
+            ink: '#1a1a1a',
+            inkMuted: '#5c5c5c',
+            accent: '#b33a3a',
+            panel: '#e8e4db',
+            borderInk: '#2d2d2d',
+          },
+          fontFamily: {
+            display: ['"Georgia"', '"Songti SC"', '"STSong"', 'serif'],
+            mono: ['ui-monospace', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .device-shadow {
+      box-shadow:
+        0 1px 0 rgba(0, 0, 0, 0.08),
+        0 12px 40px rgba(0, 0, 0, 0.12),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+    }
+    .eink-grain {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    }
+    .tab-active {
+      border-color: #1a1a1a;
+      background: #f4f1ea;
+      color: #1a1a1a;
+    }
+    .pulse-ring {
+      animation: pulse-ring 2s ease-out infinite;
+    }
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(179, 58, 58, 0.45); }
+      70% { box-shadow: 0 0 0 12px rgba(179, 58, 58, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(179, 58, 58, 0); }
+    }
+    .device-frame {
+      width: min(100%, 640px);
+      aspect-ratio: 640 / 384;
+    }
+    .clock-strip {
+      aspect-ratio: 640 / 77;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-stone-200 text-ink font-sans antialiased">
+  <div class="eink-grain min-h-screen">
+    <header class="border-b border-stone-300/80 bg-paper/90 backdrop-blur-sm sticky top-0 z-20">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+        <a href="index.html" class="text-sm text-inkMuted hover:text-ink transition flex items-center gap-1.5">
+          <span aria-hidden="true">←</span> 返回设计索引
+        </a>
+        <div class="text-right">
+          <p class="text-xs uppercase tracking-widest text-inkMuted">PRD · 刷新策略</p>
+          <h1 class="font-display text-lg sm:text-xl font-semibold">全屏 vs 局部刷新</h1>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-10">
+      <section class="bg-paper rounded-2xl border border-stone-300/60 p-6 sm:p-8 device-shadow">
+        <p class="text-inkMuted text-sm sm:text-base leading-relaxed max-w-3xl">
+          设备分辨率为 <strong class="text-ink font-mono">640×384</strong>。当<strong>日历日期</strong>变化时执行<strong>全屏刷新</strong>（日历 + 自定义图 + 时钟）；当仅<strong>分钟</strong>变化时执行<strong>局部刷新</strong>，只更新底部 <strong class="font-mono">640×77</strong> 时钟条，以降低闪烁与功耗。
+        </p>
+        <dl class="mt-6 grid sm:grid-cols-2 gap-4 text-sm">
+          <div class="rounded-xl bg-panel/80 border border-stone-300/50 p-4">
+            <dt class="font-semibold text-accent">触发：日期变化</dt>
+            <dd class="mt-1 text-inkMuted">跨日、月视图重绘、首次完整布局 → 整屏 epd 刷新</dd>
+          </div>
+          <div class="rounded-xl bg-panel/80 border border-stone-300/50 p-4">
+            <dt class="font-semibold text-ink">触发：分钟变化</dt>
+            <dd class="mt-1 text-inkMuted">仅重绘底部时钟区，上半屏日历与右侧三色图保持不变</dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- Tabs -->
+      <div>
+        <div class="flex flex-wrap gap-2 mb-6" role="tablist" aria-label="刷新模式">
+          <button type="button" id="tab-full" role="tab" aria-selected="true" aria-controls="panel-full"
+            class="tab-btn tab-active px-4 py-2.5 rounded-lg border-2 border-transparent text-sm font-medium transition">
+            全屏刷新
+          </button>
+          <button type="button" id="tab-partial" role="tab" aria-selected="false" aria-controls="panel-partial"
+            class="tab-btn px-4 py-2.5 rounded-lg border-2 border-stone-300 bg-white/60 text-inkMuted text-sm font-medium hover:border-stone-400 transition">
+            局部刷新（时钟区）
+          </button>
+        </div>
+
+        <!-- Full screen panel -->
+        <div id="panel-full" role="tabpanel" class="tab-panel">
+          <div class="flex flex-col lg:flex-row gap-8 items-start">
+            <div class="w-full flex justify-center">
+              <div class="device-frame device-shadow rounded-lg overflow-hidden border-2 border-borderInk bg-paper relative">
+                <!-- Top 307/384 -->
+                <div class="flex h-[79.95%] border-b-2 border-borderInk">
+                  <div class="w-[60%] border-r-2 border-borderInk p-2 sm:p-3 flex flex-col bg-paper">
+                    <div class="flex justify-between items-baseline text-[10px] sm:text-xs text-inkMuted mb-1">
+                      <span class="font-display font-semibold text-ink">六月 2026</span>
+                      <span>UTC+8</span>
+                    </div>
+                    <div class="grid grid-cols-7 gap-px text-[8px] sm:text-[10px] text-center text-inkMuted font-mono flex-1">
+                      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+                      <span class="opacity-40">1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
+                      <span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span>
+                      <span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span>
+                      <span>22</span><span>23</span><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span>
+                      <span>29</span><span class="bg-ink text-paper rounded-sm font-bold">30</span><span class="opacity-40">1</span><span class="opacity-40">2</span><span class="opacity-40">3</span><span class="opacity-40">4</span><span class="opacity-40">5</span>
+                    </div>
+                  </div>
+                  <div class="w-[40%] bg-panel relative overflow-hidden">
+                    <div class="absolute inset-2 border border-dashed border-accent/50 rounded flex items-center justify-center">
+                      <div class="text-center px-2">
+                        <div class="w-12 h-12 mx-auto mb-1 rounded-full bg-accent/20 border border-accent"></div>
+                        <p class="text-[9px] sm:text-[10px] text-inkMuted">自定义三色图</p>
+                        <p class="text-[8px] text-accent font-mono">256×307</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Bottom clock 77/384 ≈ 20% -->
+                <div class="h-[20.05%] flex items-center justify-center bg-paper border-t-0">
+                  <p class="font-display text-2xl sm:text-4xl tracking-wide text-ink">14:32</p>
+                </div>
+                <div class="absolute top-2 right-2 px-2 py-0.5 rounded bg-ink text-paper text-[10px] font-mono">FULL</div>
+              </div>
+            </div>
+            <div class="lg:max-w-xs text-sm text-inkMuted space-y-3">
+              <h2 class="text-ink font-semibold text-base">全屏刷新示意</h2>
+              <p>日期从 29 → 30 时，月历高亮、整屏黑白红通道一并更新，包含右侧装饰图与底部时钟。</p>
+              <ul class="list-disc pl-5 space-y-1">
+                <li>区域：384×307 日历 + 256×307 图 + 640×77 时钟</li>
+                <li>建议每日至少一次全刷，减轻残影</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Partial panel -->
+        <div id="panel-partial" role="tabpanel" class="tab-panel hidden">
+          <div class="flex flex-col lg:flex-row gap-8 items-start">
+            <div class="w-full flex justify-center">
+              <div class="device-frame device-shadow rounded-lg overflow-hidden border-2 border-borderInk bg-paper relative">
+                <div class="flex h-[79.95%] border-b-2 border-borderInk opacity-90">
+                  <div class="w-[60%] border-r-2 border-borderInk p-2 sm:p-3 flex flex-col bg-paper">
+                    <div class="flex justify-between text-[10px] sm:text-xs text-inkMuted mb-1">
+                      <span class="font-display font-semibold text-ink">六月 2026</span>
+                      <span class="text-[9px] bg-stone-300/80 px-1 rounded">静态 · 不刷新</span>
+                    </div>
+                    <div class="grid grid-cols-7 gap-px text-[8px] sm:text-[10px] text-center text-inkMuted font-mono flex-1">
+                      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+                      <span class="opacity-40">…</span><span>…</span><span>…</span><span>…</span><span>…</span><span>…</span><span>…</span>
+                      <span>…</span><span>…</span><span>…</span><span>…</span><span>…</span><span>…</span><span>…</span>
+                      <span>…</span><span>…</span><span>…</span><span>…</span><span>…</span><span>…</span><span>…</span>
+                      <span>…</span><span>…</span><span>…</span><span>…</span><span>…</span><span class="bg-ink text-paper rounded-sm">30</span><span>…</span>
+                    </div>
+                  </div>
+                  <div class="w-[40%] bg-panel flex items-center justify-center">
+                    <p class="text-[9px] text-inkMuted">静态 · 不刷新</p>
+                  </div>
+                </div>
+                <div class="h-[20.05%] flex items-center justify-center bg-paper pulse-ring relative ring-2 ring-accent/60 ring-inset">
+                  <p class="font-display text-2xl sm:text-4xl tracking-wide text-ink">14:33</p>
+                  <span class="absolute bottom-1 right-2 text-[9px] text-accent font-mono">PARTIAL</span>
+                </div>
+              </div>
+            </div>
+            <div class="lg:max-w-xs text-sm text-inkMuted space-y-3">
+              <h2 class="text-ink font-semibold text-base">局部刷新示意</h2>
+              <p>分钟从 32 → 33 时，驱动仅对<strong class="text-ink">底部矩形窗口</strong>做快速局部更新，上半屏像素保持不变。</p>
+              <ul class="list-disc pl-5 space-y-1">
+                <li>刷新窗口：<span class="font-mono text-ink">640×77</span>（屏高约 1/5）</li>
+                <li>内容：花体数字 <span class="font-mono">xx:yy</span>，UTC+8</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini clock strip replica -->
+      <section class="bg-paper rounded-2xl border border-stone-300/60 p-6 sm:p-8 device-shadow">
+        <h2 class="font-display text-lg font-semibold mb-2">底部时钟条 · 局部刷新单元</h2>
+        <p class="text-sm text-inkMuted mb-6 max-w-2xl">
+          固件将时钟区域映射为独立缓冲，分钟 tick 时只提交该条带的位图差分；全屏刷新时该条带作为整帧的一部分一并写入。
+        </p>
+        <div class="flex flex-col sm:flex-row gap-6 items-center sm:items-stretch">
+          <div class="w-full max-w-xl">
+            <div class="clock-strip w-full device-shadow rounded-md border-2 border-borderInk bg-paper flex items-center justify-center relative overflow-hidden">
+              <p class="font-display text-3xl sm:text-5xl text-ink">08:05</p>
+              <div class="absolute left-0 top-0 bottom-0 w-1 bg-accent"></div>
+              <span class="absolute top-1 left-3 text-[10px] font-mono text-inkMuted">640 × 77 px</span>
+            </div>
+          </div>
+          <div class="flex-1 text-sm space-y-2 text-inkMuted">
+            <p><strong class="text-ink">局部更新</strong>：仅此时钟条参与 epd 局部刷新序列，典型周期 60s。</p>
+            <p><strong class="text-ink">全屏更新</strong>：日期变化时连同日历格与右侧红色层一起完整刷新。</p>
+            <p class="text-xs border-t border-stone-300 pt-3 mt-3">
+              比例参考 README：上区 4/5 高度（日历 3:2 + 图），下区 1/5 为时钟。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Side-by-side comparison (responsive) -->
+      <section class="grid md:grid-cols-2 gap-6">
+        <article class="bg-white/50 rounded-xl border border-stone-300 p-5">
+          <h3 class="text-sm font-semibold text-accent mb-3">全屏刷新</h3>
+          <p class="text-xs text-inkMuted leading-relaxed">日历 DATE 变化 → 640×384 整屏。展示完整设备：月历、三色艺术图、花体时钟一并重绘。</p>
+        </article>
+        <article class="bg-white/50 rounded-xl border border-stone-300 p-5">
+          <h3 class="text-sm font-semibold text-ink mb-3">局部刷新（时钟区）</h3>
+          <p class="text-xs text-inkMuted leading-relaxed">MINUTE 变化 → 仅 640×77 底部条带。上半屏保持上一帧内容，减少用户感知闪烁。</p>
+        </article>
+      </section>
+    </main>
+
+    <footer class="max-w-5xl mx-auto px-4 sm:px-6 py-8 text-center text-xs text-inkMuted">
+      <a href="index.html" class="underline hover:text-ink">index.html</a> · 设计文档 mockup · 非生产固件
+    </footer>
+  </div>
+
+  <script>
+    const tabs = [
+      { btn: document.getElementById('tab-full'), panel: document.getElementById('panel-full') },
+      { btn: document.getElementById('tab-partial'), panel: document.getElementById('panel-partial') },
+    ];
+    function selectTab(index) {
+      tabs.forEach((t, i) => {
+        const active = i === index;
+        t.btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        t.panel.classList.toggle('hidden', !active);
+        t.btn.classList.toggle('tab-active', active);
+        t.btn.classList.toggle('border-transparent', active);
+        t.btn.classList.toggle('border-stone-300', !active);
+        t.btn.classList.toggle('bg-white/60', !active);
+        t.btn.classList.toggle('text-inkMuted', !active);
+      });
+    }
+    tabs[0].btn.addEventListener('click', () => selectTab(0));
+    tabs[1].btn.addEventListener('click', () => selectTab(1));
+  </script>
+</body>
+</html>
