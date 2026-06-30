@@ -25,12 +25,19 @@ static int utf8CharLen(unsigned char c) {
     return 1;
 }
 
+static int utf8Codepoint(const char* utf8, int len) {
+    if (len == 1) return (unsigned char)utf8[0];
+    if (len == 2)
+        return ((utf8[0] & 0x1F) << 6) | (utf8[1] & 0x3F);
+    if (len == 3)
+        return ((utf8[0] & 0x0F) << 12) | ((utf8[1] & 0x3F) << 6) | (utf8[2] & 0x3F);
+    return (unsigned char)utf8[0];
+}
+
 const uint8_t* clockGlyphForChar(const char* utf8, int* adv) {
     unsigned char c0 = (unsigned char)utf8[0];
     int len = utf8CharLen(c0);
-    int cp = c0;
-    if (len == 3)
-        cp = ((utf8[0] & 0x0F) << 12) | ((utf8[1] & 0x3F) << 6) | (utf8[2] & 0x3F);
+    int cp = utf8Codepoint(utf8, len);
     for (const auto& g : kClockGlyphs) {
         if (g.codepoint == cp) {
             if (adv) *adv = CLOCK_GLYPH_W;
@@ -74,4 +81,61 @@ void drawClockString(Framebuffer& fb, int cx, int cy, const char* s) {
 
 void formatClockLine(char* buf, size_t buflen, const struct tm* t) {
     snprintf(buf, buflen, "%02d:%02d%s", t->tm_hour, t->tm_min, layout::CLOCK_TZ_SUFFIX);
+}
+
+#include "clock_font_lunar_data.inc"
+
+struct LunarGlyphEntry {
+    int codepoint;
+    const uint8_t* data;
+};
+
+static const LunarGlyphEntry kLunarGlyphs[] = {
+    {0x6B63, glyph_27491}, {0x4E8C, glyph_20108}, {0x4E09, glyph_19977}, {0x56DB, glyph_22235},
+    {0x4E94, glyph_20116}, {0x516D, glyph_20845}, {0x4E03, glyph_19971}, {0x516B, glyph_20843},
+    {0x4E5D, glyph_20061}, {0x5341, glyph_21313}, {0x814A, glyph_33098}, {0x95F0, glyph_38384},
+    {0x6708, glyph_26376}, {0x521D, glyph_21021}, {0x5EFF, glyph_24319}, {0x5345, glyph_21317},
+    {0x51AC, glyph_20908},
+};
+
+const uint8_t* lunarGlyphForChar(const char* utf8, int* adv) {
+    unsigned char c0 = (unsigned char)utf8[0];
+    int len = utf8CharLen(c0);
+    int cp = utf8Codepoint(utf8, len);
+    for (const auto& g : kLunarGlyphs) {
+        if (g.codepoint == cp) {
+            if (adv) *adv = CLOCK_GLYPH_W;
+            return g.data;
+        }
+    }
+    if (adv) *adv = CLOCK_GLYPH_W / 2;
+    return glyph_32;
+}
+
+int lunarStringWidth(const char* s) {
+    int w = 0;
+    while (*s) {
+        int adv = 0;
+        lunarGlyphForChar(s, &adv);
+        int len = utf8CharLen((unsigned char)*s);
+        w += adv;
+        s += len;
+    }
+    return w;
+}
+
+void drawLunarString(Framebuffer& fb, int x, int y, const char* utf8) {
+    const int row_bytes = (CLOCK_GLYPH_W + 7) / 8;
+    uint8_t line[row_bytes * CLOCK_GLYPH_H];
+
+    while (utf8 && *utf8) {
+        int adv = 0;
+        const uint8_t* gd = lunarGlyphForChar(utf8, &adv);
+        int len = utf8CharLen((unsigned char)*utf8);
+        for (int i = 0; i < CLOCK_GLYPH_BYTES; i++)
+            line[i] = pgm_read_byte(gd + i);
+        fb.blit1bpp(x, y, CLOCK_GLYPH_W, CLOCK_GLYPH_H, line, layout::COLOR_BLACK, layout::COLOR_PAPER);
+        x += adv;
+        utf8 += len;
+    }
 }
