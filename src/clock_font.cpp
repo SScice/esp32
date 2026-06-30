@@ -5,17 +5,23 @@
 #include <time.h>
 
 #include "clock_font_data.inc"
+#include "clock_font_lunar_data.inc"
 
-struct ClockGlyphEntry {
+struct StripGlyphEntry {
     int codepoint;
     const uint8_t* data;
 };
 
-static const ClockGlyphEntry kClockGlyphs[] = {
+static const StripGlyphEntry kStripGlyphs[] = {
     {'0', glyph_48}, {'1', glyph_49}, {'2', glyph_50}, {'3', glyph_51}, {'4', glyph_52},
     {'5', glyph_53}, {'6', glyph_54}, {'7', glyph_55}, {'8', glyph_56}, {'9', glyph_57},
     {':', glyph_58}, {0xFF08, glyph_65288}, {0xFF09, glyph_65289},
     {'U', glyph_85}, {'T', glyph_84}, {'C', glyph_67}, {'+', glyph_43}, {' ', glyph_32},
+    {0x6B63, glyph_27491}, {0x4E8C, glyph_20108}, {0x4E09, glyph_19977}, {0x56DB, glyph_22235},
+    {0x4E94, glyph_20116}, {0x516D, glyph_20845}, {0x4E03, glyph_19971}, {0x516B, glyph_20843},
+    {0x4E5D, glyph_20061}, {0x5341, glyph_21313}, {0x814A, glyph_33098}, {0x95F0, glyph_38384},
+    {0x6708, glyph_26376}, {0x521D, glyph_21021}, {0x5EFF, glyph_24319}, {0x5345, glyph_21317},
+    {0x51AC, glyph_20908},
 };
 
 static int utf8CharLen(unsigned char c) {
@@ -25,13 +31,20 @@ static int utf8CharLen(unsigned char c) {
     return 1;
 }
 
+static int utf8Codepoint(const char* utf8, int len) {
+    if (len == 1) return (unsigned char)utf8[0];
+    if (len == 2)
+        return ((utf8[0] & 0x1F) << 6) | (utf8[1] & 0x3F);
+    if (len == 3)
+        return ((utf8[0] & 0x0F) << 12) | ((utf8[1] & 0x3F) << 6) | (utf8[2] & 0x3F);
+    return (unsigned char)utf8[0];
+}
+
 const uint8_t* clockGlyphForChar(const char* utf8, int* adv) {
     unsigned char c0 = (unsigned char)utf8[0];
     int len = utf8CharLen(c0);
-    int cp = c0;
-    if (len == 3)
-        cp = ((utf8[0] & 0x0F) << 12) | ((utf8[1] & 0x3F) << 6) | (utf8[2] & 0x3F);
-    for (const auto& g : kClockGlyphs) {
+    int cp = utf8Codepoint(utf8, len);
+    for (const auto& g : kStripGlyphs) {
         if (g.codepoint == cp) {
             if (adv) *adv = CLOCK_GLYPH_W;
             return g.data;
@@ -53,14 +66,11 @@ int clockStringWidth(const char* s) {
     return w;
 }
 
-void drawClockString(Framebuffer& fb, int cx, int cy, const char* s) {
-    const int total = clockStringWidth(s);
-    int x = cx - total / 2;
-    const int y = cy - CLOCK_GLYPH_H / 2;
+void drawStripString(Framebuffer& fb, int x, int y, const char* s) {
     const int row_bytes = (CLOCK_GLYPH_W + 7) / 8;
     uint8_t line[row_bytes * CLOCK_GLYPH_H];
 
-    while (*s) {
+    while (s && *s) {
         int adv = 0;
         const uint8_t* gd = clockGlyphForChar(s, &adv);
         int len = utf8CharLen((unsigned char)*s);
@@ -70,6 +80,13 @@ void drawClockString(Framebuffer& fb, int cx, int cy, const char* s) {
         x += adv;
         s += len;
     }
+}
+
+void drawClockString(Framebuffer& fb, int cx, int cy, const char* s) {
+    const int total = clockStringWidth(s);
+    const int x = cx - total / 2;
+    const int y = cy - CLOCK_GLYPH_H / 2;
+    drawStripString(fb, x, y, s);
 }
 
 void formatClockLine(char* buf, size_t buflen, const struct tm* t) {

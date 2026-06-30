@@ -3,6 +3,7 @@
 #include "custom_image.h"
 #include "layout_design.h"
 #include "clock_font.h"
+#include "lunar.h"
 #include <Arduino.h>
 
 DisplayCompositor::DisplayCompositor() : black(nullptr), red(nullptr), fb(black, red) {}
@@ -25,9 +26,15 @@ void DisplayCompositor::drawBottomStrip(const struct tm* now) {
     fb.drawHLine(0, layout::BOTTOM_Y, layout::PANEL_W, layout::COLOR_BLACK);
     if (layout::BOTTOM_STRIP_BORDER_PX > 1)
         fb.drawHLine(0, layout::BOTTOM_Y + 1, layout::PANEL_W, layout::COLOR_BLACK);
-    char line[32];
-    formatClockLine(line, sizeof(line), now);
-    drawClockString(fb, layout::PANEL_W / 2, layout::BOTTOM_Y + layout::BOTTOM_H / 2 + 2, line);
+    char lunar[layout::BOTTOM_STRIP_LINE_BUF];
+    char clock[layout::BOTTOM_STRIP_LINE_BUF];
+    formatLunarLine(lunar, sizeof(lunar), now);
+    formatClockLine(clock, sizeof(clock), now);
+
+    const int lunar_y = layout::BOTTOM_CLOCK_CENTER_Y - CLOCK_GLYPH_H / 2;
+    if (lunar[0] != '\0')
+        drawStripString(fb, layout::BOTTOM_LUNAR_X, lunar_y, lunar);
+    drawClockString(fb, layout::BOTTOM_CLOCK_CENTER_X, layout::BOTTOM_CLOCK_CENTER_Y, clock);
 }
 
 void DisplayCompositor::composeFull(const struct tm* now) {
